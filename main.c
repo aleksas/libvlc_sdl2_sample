@@ -7,10 +7,14 @@
 #include <math.h>
 #include <stdlib.h>
 #include <assert.h>
+
+#define SDL_MAIN_HANDLED 0
  
-#include "SDL/SDL.h"
-#include "SDL/SDL_mutex.h"
- 
+#include "SDL.h"
+#include "SDL_mutex.h"
+
+#define ssize_t intptr_t
+
 #include "vlc/vlc.h"
  
 #define WIDTH 640
@@ -19,17 +23,17 @@
 #define VIDEOWIDTH 320
 #define VIDEOHEIGHT 240
  
-struct context {
+typedef struct context_ {
     SDL_Renderer *renderer;
     SDL_Texture *texture;
     SDL_mutex *mutex;
     int n;
-};
+} context;
  
 // VLC prepares to render a video frame.
 static void *lock(void *data, void **p_pixels) {
  
-    struct context *c = (context *)data;
+    context *c = (context *)data;
  
     int pitch;
     SDL_LockMutex(c->mutex);
@@ -41,7 +45,7 @@ static void *lock(void *data, void **p_pixels) {
 // VLC just rendered a video frame.
 static void unlock(void *data, void *id, void *const *p_pixels) {
  
-    struct context *c = (context *)data;
+    context *c = (context *)data;
  
     uint16_t *pixels = (uint16_t *)*p_pixels;
  
@@ -65,7 +69,7 @@ static void unlock(void *data, void *id, void *const *p_pixels) {
 // VLC wants to display a video frame.
 static void display(void *data, void *id) {
  
-    struct context *c = (context *)data;
+    context *c = (context *)data;
  
     SDL_Rect rect;
     rect.w = VIDEOWIDTH;
@@ -103,7 +107,7 @@ int main(int argc, char *argv[]) {
     SDL_Event event;
     int done = 0, action = 0, pause = 0, n = 0;
  
-    struct context context;
+    context context;
  
     if(argc < 2) {
         printf("Usage: %s <filename>\n", argv[0]);
@@ -147,7 +151,6 @@ int main(int argc, char *argv[]) {
  
     // If you don't have this variable set you must have plugins directory
     // with the executable or libvlc_new() will not work!
-    printf("VLC_PLUGIN_PATH=%s\n", getenv("VLC_PLUGIN_PATH"));
  
     // Initialise libVLC.
     libvlc = libvlc_new(vlc_argc, vlc_argv);
@@ -156,7 +159,7 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
  
-    m = libvlc_media_new_path(libvlc, argv[1]);
+    m = libvlc_media_new_location(libvlc, argv[1]);
     mp = libvlc_media_player_new_from_media(m);
     libvlc_media_release(m);
  

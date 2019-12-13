@@ -1,4 +1,4 @@
-LIBRARY "libvlccore.dll"
+LIBRARY "libvlc.dll"
 
 EXPORTS
 
