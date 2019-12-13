@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+    <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+
+    <ItemGroup>
+      <PackageReference Include="System.Runtime.Serialization.Json" />
+   </ItemGroup>
+   
+    <UsingTask TaskName="DownloadFile" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
+        <ParameterGroup>
+            <Address ParameterType="System.String" Required="true"/>
+            <FileName ParameterType="System.String" Required="true" />
+        </ParameterGroup>
+        <Task>
+            <Reference Include="System" />
+            <Code Type="Fragment" Language="cs">
+            <![CDATA[
+                System.Console.WriteLine(Address);
+                if ( !File.Exists(FileName) ) {
+                    new System.Net.WebClient().DownloadFile(Address, FileName);
+                }
+            ]]>
+            </Code>
+        </Task>
+    </UsingTask>
+
+	<ItemGroup>
+        <DownloadFiles Include="https://www.libsdl.org/release/SDL2-devel-2.0.10-VC.zip">
+            <RelDir></RelDir>
+        </DownloadFiles>
+        <DownloadFiles Include="https://github.com/videolan/vlc/archive/3.0.0-git.zip">
+            <RelDir></RelDir>
+        </DownloadFiles>
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(Platform)'=='x64'">
+        <DownloadFiles Include="https://www.libsdl.org/release/SDL2-2.0.10-win32-x64.zip">
+            <RelDir>x64</RelDir>
+        </DownloadFiles>
+        <DownloadFiles Include="http://download.videolan.org/pub/videolan/vlc/3.0.8/win64/vlc-3.0.8-win64.zip">
+            <RelDir>x64</RelDir>
+        </DownloadFiles>
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(Platform)'=='x86'">
+        <DownloadFiles Include="https://www.libsdl.org/release/SDL2-2.0.10-win32-x86.zip">
+            <RelDir>x86</RelDir>
+        </DownloadFiles>
+        <DownloadFiles Include="http://download.videolan.org/pub/videolan/vlc/3.0.8/win32/vlc-3.0.8-win32.zip">
+            <RelDir>x86</RelDir>
+        </DownloadFiles>
+	</ItemGroup>
+
+    <Target Name="Download Dependencies">
+        <Error Text="$(VC_IncludePath) $(WindowsSDK_IncludePath)" />
+        <Warning Text="Platform:$(Platform) Configuration:$(Configuration)" />
+
+        <CreateItem
+            Include="@(SourceFiles->'%(UrlPrefix)%(Identity)')"
+            AdditionalMetadata="RelDir=%(RelDir)">
+           <Output
+               TaskParameter="Include"
+               ItemName="DownloadFiles"/>
+        </CreateItem>
+
+        <MakeDir Directories="download;dependencies;dependencies\x86;dependencies\x64"/>
+        <MakeDir Directories="download\%(DownloadFiles.RelDir)"/>
+        
+        <MakeDir Directories="%(SourceFiles.RelDir)"/>
+
+        <Exec
+            Command="powershell -command &quot;&amp; Invoke-WebRequest '%(DownloadFiles.Identity)' -OutFile 'download\%(RelDir)\%(Filename)%(Extension)' &quot;" />
+
+        <Copy
+            SourceFiles="@(SourceFiles->'download\%(RelDir)\%(Identity)')"
+            DestinationFiles="%(RelDir)\%(Filename)%(Extension)" 
+            SkipUnchangedFiles="true" />
+        
+        <Exec
+            Command="powershell -command &quot;&amp; expand-archive -force -path 'download\%(RelDir)\%(DownloadFiles.Filename)%(Extension)' -destinationpath '.\dependencies\%(RelDir)' &quot;"
+            Condition="'%(Extension)'=='.zip'" />
+
+        
+    </Target>
+</Project>

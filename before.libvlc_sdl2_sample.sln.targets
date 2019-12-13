@@ -1,0 +1,9 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ProjectReference Include="dependencies.proj">
+      <AdditionalProperties>Configuration=$(Configuration); Platform=$(Platform)</AdditionalProperties>
+      <Configuration>$(Configuration)</Configuration>
+      <Platform>$(Platform)</Platform>
+    </ProjectReference>
+  </ItemGroup>
+</Project>
